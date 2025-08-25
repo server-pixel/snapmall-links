@@ -53,7 +53,7 @@
 
     if (isAndroid) {
       // 1) جرّب السكيم أولاً
-      location.href = schemeUrl;
+      location.href = schemePath;
 
       // 2) بعد 400ms جرّب intent:// (أفضل دعم في كروم/واتساب)
       setTimeout(() => {
@@ -70,7 +70,7 @@
 
     } else if (isIOS) {
       // iOS: افتح السكيم ثم fallback
-      location.href = schemeUrl;
+      location.href = schemePath;
       setTimeout(openFallback, 1200);
     } else {
       openFallback();
