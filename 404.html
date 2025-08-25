@@ -21,14 +21,14 @@
    const productId = (parts.length >= 2 && parts[parts.length-2] === 'p') ? parts[parts.length-1] : '0';
 
   // جرّب الشكلين: path و query
-  const schemePath  = "snap_mall://p/" + productId;       // snap_mall://p/15650
-  const schemeQuery = "snap_mall://p?id=" + productId;    // snap_mall://p?id=15650
+  const schemePath  = "snapmall://p/" + productId;       // snapmall://p/15650
+  const schemeQuery = "snapmall://p?id=" + productId;    // snapmall://p?id=15650
 
   const playUrl   = "https://play.google.com/store/apps/details?id=" + androidPkg;
 
   // intent (نخلي الداتا الأساسية على شكل path)
   const intentUrl = "intent://p/" + encodeURIComponent(productId) +
-                    "#Intent;scheme=snap_mall;package=" + androidPkg +
+                    "#Intent;scheme=snapmall;package=" + androidPkg +
                     ";S.browser_fallback_url=" + encodeURIComponent(playUrl) +
                     ";end";
   const appStoreUrl = iosAppId ? ("https://apps.apple.com/app/id" + iosAppId) : fallbackWeb;
