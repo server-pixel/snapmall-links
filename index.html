@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فتح التطبيق</title>
+<script>
+    (function () {
+        // ←← عدّل هذه القيم حسب تطبيقك
+        const androidPkg = "com.legend.lulua";     // اسم الباكدج على أندرويد
+        const iosAppId = "1234567890";           // App Store ID الحقيقي
+        const fallbackWeb = "https://snapmall.ps/download"; // صفحة تنزيل/تعليمات
+
+        // نقرأ ID من آخر جزء في المسار: /p/15569 → 15569
+        const path = location.pathname.replace(/\/+$/, "");
+        const id = path.split("/").pop(); // 15569
+        // إن كان المسار بلا ID، عشان التجربة:
+        const productId = /^\d|\w/.test(id) ? id : "0";
+
+        // رابط السكيم لتطبيقك
+        const scheme = "snap_mall://p/" + productId;
+
+        const ua = navigator.userAgent || navigator.vendor || "";
+        const isAndroid = /Android/i.test(ua);
+        const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+        function openFallback() {
+            if (isAndroid) {
+                location.href = "https://play.google.com/store/apps/details?id=" + androidPkg;
+            } else if (isIOS) {
+                location.href = "https://apps.apple.com/app/id" + iosAppId;
+            } else {
+                location.href = fallbackWeb;
+            }
+        }
+
+        function openApp() {
+            const start = Date.now();
+            if (isAndroid) {
+                // جرّب فتح التطبيق
+                location.href = scheme;
+                // لو ما فتح خلال ~1.3 ثانية → افتح المتجر
+                setTimeout(() => { if (Date.now() - start < 1400) openFallback(); }, 1300);
+            } else if (isIOS) {
+                // iOS: جرّب السكيم ثم المتجر
+                location.href = scheme;
+                setTimeout(openFallback, 1200);
+            } else {
+                openFallback();
+            }
+        }
+
+        window.onload = openApp;
+    })();
+</script>
+
+<body style="font-family:system-ui;padding:40px;text-align:center">
+    <h2>جاري فتح التطبيق…</h2>
+    <p>إن لم يُفتح التطبيق تلقائيًا سيتم نقلك للمتجر خلال لحظات.</p>
+</body>
+
+</html>
