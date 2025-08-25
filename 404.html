@@ -3,20 +3,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>فتح التطبيق</title>
+<style>
+  body {font-family: system-ui, -apple-system, Segoe UI, Tahoma; padding: 40px; text-align: center;}
+  .btn {display:inline-block; padding:12px 18px; border-radius:10px; border:none; background:#2b7a0b; color:#fff; font-size:16px; cursor:pointer;}
+  .hint {color:#666; margin-top:10px; font-size:14px;}
+</style>
 <script>
 (function () {
-  // إعدادات تطبيقك
-  const androidPkg  = "com.legend.lulua";          // ← عدّل package name لو مختلف
-  const iosAppId    = "";                          // ← ضع App Store ID لو عندك
-  const fallbackWeb = "https://snapmall.ps/";      // ← صفحة بديلة (تحميل/موقع)
+  // ←← عدّل هذه القيم حسب تطبيقك
+  const androidPkg  = "com.legend.lulua";          // اسم الباكدج على أندرويد
+  const iosAppId    = "1234567890";                // App Store ID الحقيقي
+  const fallbackWeb = "https://snapmall.ps/download";
 
-  // استخراج الـ ID من آخر جزء في المسار
-  const path = location.pathname.replace(/\/+$/, "");
-  const id   = path.split("/").pop(); 
-  const productId = id && id !== "404" ? id : "0"; 
+  // استخراج معرف المنتج من المسار: /p/15569 → 15569
+  const parts = location.pathname.replace(/\/+$/,'').split('/');
+  // نتوقع .../p/<id>
+  const productId = (parts.length >= 2 && parts[parts.length-2] === 'p') ? parts[parts.length-1] : '0';
 
-  // سكيم التطبيق
-  const scheme = "snap_mall://p/" + productId;
+  const schemeUrl = "snap_mall://p/" + productId;
+  const playUrl   = "https://play.google.com/store/apps/details?id=" + androidPkg;
+  const intentUrl = "intent://p/" + encodeURIComponent(productId) +
+                    "#Intent;scheme=snap_mall;package=" + androidPkg +
+                    ";S.browser_fallback_url=" + encodeURIComponent(playUrl) +
+                    ";end";
+  const appStoreUrl = iosAppId ? ("https://apps.apple.com/app/id" + iosAppId) : fallbackWeb;
 
   const ua = navigator.userAgent || navigator.vendor || "";
   const isAndroid = /Android/i.test(ua);
@@ -24,33 +34,69 @@
 
   function openFallback() {
     if (isAndroid) {
-      location.href = "https://play.google.com/store/apps/details?id=" + androidPkg;
-    } else if (isIOS && iosAppId) {
-      location.href = "https://apps.apple.com/app/id" + iosAppId;
+      location.href = playUrl;
+    } else if (isIOS) {
+      location.href = appStoreUrl;
     } else {
       location.href = fallbackWeb;
     }
   }
 
-  function openApp() {
-    const start = Date.now();
+  // المحاولة التلقائية (قد تُحجب في بعض in-app browsers)
+  function tryAutoOpen() {
+    const t0 = Date.now();
 
     if (isAndroid) {
-      location.href = scheme;
-      setTimeout(() => { if (Date.now() - start < 1400) openFallback(); }, 1300);
+      // 1) جرّب السكيم أولاً
+      location.href = schemeUrl;
+
+      // 2) بعد 400ms جرّب intent:// (أفضل دعم في كروم/واتساب)
+      setTimeout(() => {
+        // لو لم يتم التحويل للتطبيق خلال ~400ms
+        if (Date.now() - t0 < 1500) {
+          location.href = intentUrl;
+        }
+      }, 400);
+
+      // 3) fallback أخير بعد ~1.6s
+      setTimeout(() => {
+        if (Date.now() - t0 < 1600) openFallback();
+      }, 1600);
+
     } else if (isIOS) {
-      location.href = scheme;
+      // iOS: افتح السكيم ثم fallback
+      location.href = schemeUrl;
       setTimeout(openFallback, 1200);
     } else {
       openFallback();
     }
   }
 
-  window.onload = openApp;
+  // المحاولة اليدوية (تُستدعى عند ضغط الزر — تفاعل المستخدم)
+  window.tryOpenManually = function () {
+    if (isAndroid) {
+      // مباشرة intent:// تعطي نتيجة أفضل
+      location.href = intentUrl;
+      setTimeout(openFallback, 1500);
+    } else if (isIOS) {
+      location.href = schemeUrl;
+      setTimeout(openFallback, 1200);
+    } else {
+      openFallback();
+    }
+  };
+
+  // شغّل المحاولة التلقائية — قد لا تعمل داخل بعض متصفحات التطبيقات
+  window.addEventListener('load', () => {
+    tryAutoOpen();
+  });
 })();
 </script>
-<body style="font-family:system-ui;padding:40px;text-align:center">
+
+<body>
   <h2>جاري فتح التطبيق…</h2>
-  <p>إن لم يُفتح التطبيق تلقائيًا سيتم نقلك للمتجر خلال لحظات.</p>
+  <p class="hint">إذا لم يُفتح تلقائيًا، اضغط الزر أدناه:</p>
+  <button class="btn" onclick="tryOpenManually()">افتح التطبيق الآن</button>
+  <p class="hint">إن تعذّر الفتح، سيتم تحويلك للمتجر تلقائيًا.</p>
 </body>
 </html>
