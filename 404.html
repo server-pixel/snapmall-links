@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فتح التطبيق</title>
+<script>
+(function () {
+  // إعدادات تطبيقك
+  const androidPkg  = "com.legend.lulua";          // ← عدّل package name لو مختلف
+  const iosAppId    = "";                          // ← ضع App Store ID لو عندك
+  const fallbackWeb = "https://snapmall.ps/";      // ← صفحة بديلة (تحميل/موقع)
+
+  // استخراج الـ ID من آخر جزء في المسار
+  const path = location.pathname.replace(/\/+$/, "");
+  const id   = path.split("/").pop(); 
+  const productId = id && id !== "404" ? id : "0"; 
+
+  // سكيم التطبيق
+  const scheme = "snap_mall://p/" + productId;
+
+  const ua = navigator.userAgent || navigator.vendor || "";
+  const isAndroid = /Android/i.test(ua);
+  const isIOS     = /iPhone|iPad|iPod/i.test(ua);
+
+  function openFallback() {
+    if (isAndroid) {
+      location.href = "https://play.google.com/store/apps/details?id=" + androidPkg;
+    } else if (isIOS && iosAppId) {
+      location.href = "https://apps.apple.com/app/id" + iosAppId;
+    } else {
+      location.href = fallbackWeb;
+    }
+  }
+
+  function openApp() {
+    const start = Date.now();
+
+    if (isAndroid) {
+      location.href = scheme;
+      setTimeout(() => { if (Date.now() - start < 1400) openFallback(); }, 1300);
+    } else if (isIOS) {
+      location.href = scheme;
+      setTimeout(openFallback, 1200);
+    } else {
+      openFallback();
+    }
+  }
+
+  window.onload = openApp;
+})();
+</script>
+<body style="font-family:system-ui;padding:40px;text-align:center">
+  <h2>جاري فتح التطبيق…</h2>
+  <p>إن لم يُفتح التطبيق تلقائيًا سيتم نقلك للمتجر خلال لحظات.</p>
+</body>
+</html>
