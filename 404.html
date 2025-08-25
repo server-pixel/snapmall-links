@@ -18,10 +18,15 @@
   // استخراج معرف المنتج من المسار: /p/15569 → 15569
   const parts = location.pathname.replace(/\/+$/,'').split('/');
   // نتوقع .../p/<id>
-  const productId = (parts.length >= 2 && parts[parts.length-2] === 'p') ? parts[parts.length-1] : '0';
+   const productId = (parts.length >= 2 && parts[parts.length-2] === 'p') ? parts[parts.length-1] : '0';
 
-  const schemeUrl = "snap_mall://p/" + productId;
+  // جرّب الشكلين: path و query
+  const schemePath  = "snap_mall://p/" + productId;       // snap_mall://p/15650
+  const schemeQuery = "snap_mall://p?id=" + productId;    // snap_mall://p?id=15650
+
   const playUrl   = "https://play.google.com/store/apps/details?id=" + androidPkg;
+
+  // intent (نخلي الداتا الأساسية على شكل path)
   const intentUrl = "intent://p/" + encodeURIComponent(productId) +
                     "#Intent;scheme=snap_mall;package=" + androidPkg +
                     ";S.browser_fallback_url=" + encodeURIComponent(playUrl) +
@@ -73,15 +78,18 @@
   }
 
   // المحاولة اليدوية (تُستدعى عند ضغط الزر — تفاعل المستخدم)
-  window.tryOpenManually = function () {
-    alert(1);
-    alert(intentUrl);
+ window.tryOpenManually = function () {
+    // نحاول أولاً الـ intent (أندرويد)
     if (isAndroid) {
-      // مباشرة intent:// تعطي نتيجة أفضل
       location.href = intentUrl;
+      // لو بعض المتصفحات قصّت المسار، نعيد المحاولة بالشكل الآخر (query)
+      setTimeout(() => { location.href = schemeQuery; }, 200);
+      setTimeout(() => { location.href = schemePath;  }, 400);
       setTimeout(openFallback, 1500);
     } else if (isIOS) {
-      location.href = schemeUrl;
+      // iOS: جرّب path ثم query
+      location.href = schemePath;
+      setTimeout(() => { location.href = schemeQuery; }, 400);
       setTimeout(openFallback, 1200);
     } else {
       openFallback();
@@ -94,6 +102,8 @@
 //   });
 })();
 </script>
+
+  
 
 <body>
   <h2>جاري فتح التطبيق…</h2>
