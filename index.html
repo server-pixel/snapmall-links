@@ -11,22 +11,26 @@
 <script>
 (function () {
   // ←← عدّل هذه القيم حسب تطبيقك
-  const androidPkg  = "com.legend.lulua";          // اسم الباكدج على أندرويد
-  const iosAppId    = "1234567890";                // App Store ID الحقيقي
+  const androidPkg  = "com.legend.lulua";
+  const iosAppId    = "1234567890";
   const fallbackWeb = "https://snapmall.ps/download";
 
   // استخراج معرف المنتج من المسار: /p/15569 → 15569
   const parts = location.pathname.replace(/\/+$/,'').split('/');
-  // نتوقع .../p/<id>
   const productId = (parts.length >= 2 && parts[parts.length-2] === 'p') ? parts[parts.length-1] : '0';
 
-  const schemeUrl = "snap_mall://p/" + productId;
+  // روابط السكيم
+  const schemePath  = "snapmall://p/" + productId;     // snapmall://p/15650
+  const schemeQuery = "snapmall://p?id=" + productId;  // snapmall://p?id=15650
+
   const playUrl   = "https://play.google.com/store/apps/details?id=" + androidPkg;
+  const appStoreUrl = iosAppId ? ("https://apps.apple.com/app/id" + iosAppId) : fallbackWeb;
+
+  // intent (أفضل دعم على كروم/واتساب بالأندرويد)
   const intentUrl = "intent://p/" + encodeURIComponent(productId) +
-                    "#Intent;scheme=snap_mall;package=" + androidPkg +
+                    "#Intent;scheme=snapmall;package=" + androidPkg +
                     ";S.browser_fallback_url=" + encodeURIComponent(playUrl) +
                     ";end";
-  const appStoreUrl = iosAppId ? ("https://apps.apple.com/app/id" + iosAppId) : fallbackWeb;
 
   const ua = navigator.userAgent || navigator.vendor || "";
   const isAndroid = /Android/i.test(ua);
@@ -42,56 +46,74 @@
     }
   }
 
-  // المحاولة التلقائية (قد تُحجب في بعض in-app browsers)
+  // 🔒 إغلاق/رجوع الصفحة عند انتقال المستخدم للتطبيق (الصفحة تصبح مخفية)
+  let closeScheduled = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !closeScheduled) {
+      closeScheduled = true;
+      // ننتظر قليلًا لنضمن التحويل تم
+      setTimeout(() => {
+        // حاول إغلاق الصفحة
+        window.close();
+        // لو ما سمح المتصفح بالإغلاق:
+        if (!document.hidden) return; // عاد المستخدم بسرعة، لا تغلق
+        if (history.length > 1) {
+          history.back();
+        } else {
+          // نافذة مستقلة أو دون تاريخ: أفرغ الصفحة
+          location.replace('about:blank');
+        }
+      }, 800);
+    }
+  });
+
+  // تشغيل تلقائي
   function tryAutoOpen() {
+    alert(1);
     const t0 = Date.now();
 
     if (isAndroid) {
-      // 1) جرّب السكيم أولاً
-      location.href = schemeUrl;
-
-      // 2) بعد 400ms جرّب intent:// (أفضل دعم في كروم/واتساب)
+      // 1) جرّب السكيم (path ثم query) سريعًا
+      location.href = schemePath;
+      setTimeout(() => { if (Date.now()-t0 < 600) location.href = schemeQuery; }, 200);
+      // 2) intent:// أقوى دعم على كروم/واتساب
       setTimeout(() => {
-        // لو لم يتم التحويل للتطبيق خلال ~400ms
-        if (Date.now() - t0 < 1500) {
-          location.href = intentUrl;
-        }
+        if (Date.now() - t0 < 1200) location.href = intentUrl;
       }, 400);
-
-      // 3) fallback أخير بعد ~1.6s
+      // 3) Fallback أخير لو ما تم التحويل
       setTimeout(() => {
-        if (Date.now() - t0 < 1600) openFallback();
+        if (Date.now() - t0 < 1800) openFallback();
       }, 1600);
 
     } else if (isIOS) {
-      // iOS: افتح السكيم ثم fallback
-      location.href = schemeUrl;
+      // iOS: جرّب السكيم (path ثم query) ثم Fallback
+      location.href = schemePath;
+      setTimeout(() => { if (Date.now()-t0 < 800) location.href = schemeQuery; }, 300);
       setTimeout(openFallback, 1200);
+
     } else {
       openFallback();
     }
   }
 
-  // المحاولة اليدوية (تُستدعى عند ضغط الزر — تفاعل المستخدم)
+  // زر يدوي (لو التلقائي حُجب بواسطة in-app browser)
   window.tryOpenManually = function () {
-      alert(1);
-    alert(intentUrl);
     if (isAndroid) {
-      // مباشرة intent:// تعطي نتيجة أفضل
       location.href = intentUrl;
+      setTimeout(() => { location.href = schemeQuery; }, 200);
+      setTimeout(() => { location.href = schemePath;  }, 400);
       setTimeout(openFallback, 1500);
     } else if (isIOS) {
-      location.href = schemeUrl;
+      location.href = schemePath;
+      setTimeout(() => { location.href = schemeQuery; }, 400);
       setTimeout(openFallback, 1200);
     } else {
       openFallback();
     }
   };
 
-  // شغّل المحاولة التلقائية — قد لا تعمل داخل بعض متصفحات التطبيقات
-//   window.addEventListener('load', () => {
-//     tryAutoOpen();
-//   });
+  // فعّل التلقائي عند التحميل
+  window.addEventListener('load', tryAutoOpen);
 })();
 </script>
 
