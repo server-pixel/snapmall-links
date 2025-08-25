@@ -69,28 +69,16 @@
 
   // تشغيل تلقائي
   function tryAutoOpen() {
-    alert(1);
-    const t0 = Date.now();
 
-    if (isAndroid) {
-      // 1) جرّب السكيم (path ثم query) سريعًا
-      location.href = schemePath;
-      setTimeout(() => { if (Date.now()-t0 < 600) location.href = schemeQuery; }, 200);
-      // 2) intent:// أقوى دعم على كروم/واتساب
-      setTimeout(() => {
-        if (Date.now() - t0 < 1200) location.href = intentUrl;
-      }, 400);
-      // 3) Fallback أخير لو ما تم التحويل
-      setTimeout(() => {
-        if (Date.now() - t0 < 1800) openFallback();
-      }, 1600);
-
+     if (isAndroid) {
+      location.href = intentUrl;
+      setTimeout(() => { location.href = schemeQuery; }, 200);
+      setTimeout(() => { location.href = schemePath;  }, 400);
+      setTimeout(openFallback, 1500);
     } else if (isIOS) {
-      // iOS: جرّب السكيم (path ثم query) ثم Fallback
       location.href = schemePath;
-      setTimeout(() => { if (Date.now()-t0 < 800) location.href = schemeQuery; }, 300);
+      setTimeout(() => { location.href = schemeQuery; }, 400);
       setTimeout(openFallback, 1200);
-
     } else {
       openFallback();
     }
@@ -112,9 +100,8 @@
     }
   };
 
-  tryAutoOpen();
   // فعّل التلقائي عند التحميل
-  // window.addEventListener('load', tryAutoOpen);
+  window.addEventListener('load', tryAutoOpen);
 })();
 </script>
 
