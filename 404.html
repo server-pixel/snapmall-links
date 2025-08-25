@@ -74,7 +74,8 @@
 
   // المحاولة اليدوية (تُستدعى عند ضغط الزر — تفاعل المستخدم)
   window.tryOpenManually = function () {
-
+    alert(1);
+    alert(intentUrl);
     if (isAndroid) {
       // مباشرة intent:// تعطي نتيجة أفضل
       location.href = intentUrl;
